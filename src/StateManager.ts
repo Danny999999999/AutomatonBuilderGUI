@@ -1156,6 +1156,7 @@ export default class StateManager {
       ...selectedTransitions,
       ...transitionsBetweenSelectedNodes,
     ];
+    cutData.preSelected = this.selectedObjects;
 
     // Save start node if it's being cut
     cutData.wasStartNode = cutData.nodes.includes(StateManager.startNode);
@@ -1197,7 +1198,6 @@ export default class StateManager {
       data.nodes.forEach((node) => {
         StateManager._nodeWrappers.push(node);
         StateManager._nodeLayer.add(node.nodeGroup);
-        StateManager.selectObject(node);
 
         // Restore start node if necessary
         if (data.wasStartNode && StateManager.startNode == null) {
@@ -1209,10 +1209,11 @@ export default class StateManager {
       data.transitions.forEach((transition) => {
         StateManager._transitionWrappers.push(transition);
         StateManager._transitionLayer.add(transition.konvaGroup);
-        StateManager.selectObject(transition);
       });
       StateManager._nodeLayer?.draw();
       StateManager._transitionLayer?.draw();
+      StateManager.deselectAllObjects();
+      data.preSelected.forEach(StateManager.selectObject);
       StateManager.updateTransitions();
     };
 
@@ -1747,15 +1748,27 @@ export default class StateManager {
 
   /** Augments the selection in a way supported by the UndoRedoManager */
   public static addToSelection(objs: SelectableObject[]) {
+    if (objs.length == 0) return;
     StateManager.setSelection(objs.concat(StateManager._selectedObjects));
   }
   /** Clears the selection in a way supported by the UndoRedoManager */
   public static clearSelection() {
+    if (StateManager.selectedObjects.length == 0) return;
     StateManager.setSelection([]);
   }
 
   /** Sets the selection in a way supported by the UndoRedoManager */
   public static setSelection(objs: SelectableObject[]) {
+    if (
+      objs.concat(StateManager.selectedObjects).every((e: SelectableObject) => {
+        return (
+          objs.indexOf(e) > -1 && StateManager.selectedObjects.indexOf(e) > -1
+        );
+      })
+    ) {
+      return; //if the selection is the same, we don't do anything.
+    }
+
     const forward = (data: SelectionData) => {
       StateManager.setSelectedObjects(data.newSelection);
       StateManager._selectedObjects = data.oldSelection;
@@ -1783,6 +1796,7 @@ export default class StateManager {
       backward,
       { oldSelection: StateManager._selectedObjects, newSelection: objs },
     );
+    UndoRedoManager.pushAction(action);
   }
 
   /**
@@ -1920,7 +1934,6 @@ export default class StateManager {
 
     let performRemoveBackward = (data: RemoveNodeActionDataMulti) => {
       // Add comment regions back
-      StateManager.deselectAllObjects();
       StateManager._commentRegions.push(...data.comments);
       data.comments.forEach((comment) => {
         StateManager._commentLayer.add(comment.nodeGroup);
@@ -1962,7 +1975,7 @@ export default class StateManager {
         StateManager._transitionWrappers.push(transition);
         StateManager._transitionLayer.add(transition.konvaGroup);
       });
-
+      StateManager.deselectAllObjects();
       data.originalSelected.forEach(StateManager.selectObject);
       StateManager._nodeLayer?.draw();
       StateManager._transitionLayer?.draw();
@@ -1979,8 +1992,6 @@ export default class StateManager {
     );
 
     UndoRedoManager.pushAction(removeAction);
-
-    StateManager.deselectAllObjects();
   }
 
   /**
@@ -3048,6 +3059,8 @@ class CutActionData extends ActionData {
 
   /** Whether any of the nodes removed were the start node. */
   public wasStartNode: boolean = false;
+
+  public preSelected: SelectableObject[] = [];
 }
 
 /** Holds the data associated with a "create comment" action. */
