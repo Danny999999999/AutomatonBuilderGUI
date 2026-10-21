@@ -1389,7 +1389,7 @@ export default class StateManager {
       `Add Transition from "${source.labelText}" to "${dest.labelText}"`,
       addTransitionForward,
       addTransitionBackward,
-      { transition: newTransition, oldSelected: oldSelected },
+      { transition: newTransition, oldSelect: oldSelected },
     );
     UndoRedoManager.pushAction(addTransitionAction);
   }
