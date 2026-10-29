@@ -53,7 +53,7 @@ export default class StateManager {
   /**
    * When the selection box is being used, this stores the corner where the user started dragging.
    */
-  private static _selectionBoxStart: Vector2d | null = null;
+  private static _selectBoxStart: Vector2d | null = null;
 
   /**
    * When the user is in the process of creating a transition, holds the
@@ -508,12 +508,12 @@ export default class StateManager {
 
   /** Returns true if the selection box is active. */
   public static isSelectBoxActive(): boolean {
-    return StateManager._selectionBoxStart != null;
+    return StateManager._selectBoxStart != null;
   }
 
   /** Creates a selection box. */
   public static startSelectBox(start: Vector2d) {
-    StateManager._selectionBoxStart = start;
+    StateManager._selectBoxStart = start;
     StateManager._stage?.setDraggable(false);
   }
 
@@ -521,9 +521,9 @@ export default class StateManager {
    * Deletes and cleans up the selection box.
    */
   public static killSelectBox() {
-    StateManager._selectionBoxStart = null;
+    StateManager._selectBoxStart = null;
     StateManager._stage?.setDraggable(true);
-    StateManager.drawSelectionBox();
+    StateManager.drawSelectBox();
   }
 
   /**
@@ -563,7 +563,7 @@ export default class StateManager {
     if (!StateManager.isSelectBoxActive()) return null;
 
     const corner1: Vector2d = StateManager.toStageSpace(
-      StateManager._selectionBoxStart,
+      StateManager._selectBoxStart,
     );
     let x_min = corner1.x;
     let y_min = corner1.y;
@@ -611,7 +611,7 @@ export default class StateManager {
     ) {
       StateManager.killSelectBox();
     }
-    StateManager.drawSelectionBox();
+    StateManager.drawSelectBox();
   }
 
   /** Called when the mouse is released. Note: this should always occur right before onClick().  */
@@ -622,7 +622,7 @@ export default class StateManager {
   }
 
   /** Draw temporary annotations. */
-  private static drawSelectionBox() {
+  private static drawSelectBox() {
     StateManager._selectBoxLayer?.destroyChildren();
     if (StateManager.isSelectBoxActive()) {
       const [min_x, min_y, max_x, max_y] = StateManager.getSelectBoxBounds();
